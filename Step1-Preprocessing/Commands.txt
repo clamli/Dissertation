@@ -1,0 +1,1 @@
+python item_information.py ../Dataset/All_Beauty/meta_All_Beauty.json.gz Data/title Data/description
