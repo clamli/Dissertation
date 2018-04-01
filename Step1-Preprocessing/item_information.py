@@ -2,7 +2,7 @@ import sys
 import pandas as pd
 import numpy as np
 import read2df as rdf
-import write2file as wtf
+import read_write as rw
 
 '''
 Input: input path ("../Dataset/All_Beauty/meta_All_Beauty.json.gz")
@@ -27,7 +27,7 @@ if (__name__ == '__main__'):
 		dict_description[subdf.loc[indexs]['asin']] = subdf.loc[indexs]['description']
 
 	#### write generated dictionary into files
-	wtf.write2file(dict_title, foutput_title)
-	wtf.write2file(dict_description, foutput_description)
+	rw.write2file(dict_title, foutput_title)
+	rw.write2file(dict_description, foutput_description)
 	print("Write Done!")
 	print("Info: %d/%d"%(subdf.shape[0], df.shape[0]))
