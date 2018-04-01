@@ -1,1 +1,2 @@
 python item_information.py ../Dataset/All_Beauty/meta_All_Beauty.json.gz Data/title Data/description
+python user_information.py ../Dataset/All_Beauty/reviews_All_Beauty.json.gz Data/title Data/iu_sparse_matrix_train.npz Data/iu_sparse_matrix_test.npz Data/uid Data/train_item_id Data/test_item_id
