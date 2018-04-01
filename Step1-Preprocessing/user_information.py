@@ -67,23 +67,23 @@ if (__name__ == '__main__'):
 	cnt = 0
 	lenght = df_train.shape[0]
 	for index, row in df_train.iterrows():
-		print("ui train matrix: %d / %d"%(cnt, lenght), end="\r")
+		print("iu train matrix: %d / %d"%(cnt, lenght), end="\r")
 		iu_matrix_train[train_item_id_dict[row['asin']], user_id_dict[row['reviewerID']]] = int(row['overall'])
 		cnt += 1
 	iu_sparse_matrix_train = scipy.sparse.csr_matrix(iu_matrix_train)
-	print("density of ui train matrix is: %.4f%%"%(100*len(find(iu_sparse_matrix_train)[0])/(iu_sparse_matrix_train.shape[0]*iu_sparse_matrix_train.shape[1])))
+	print("density of iu train matrix is: %.4f%%"%(100*len(find(iu_sparse_matrix_train)[0])/(iu_sparse_matrix_train.shape[0]*iu_sparse_matrix_train.shape[1])))
 	scipy.sparse.save_npz(foutput1, iu_sparse_matrix_train)
 	# test
 	iu_matrix_test = np.zeros((test_row, col), dtype=np.int8)
 	cnt = 0
 	lenght = df_test.shape[0]
 	for index, row in df_test.iterrows():
-		print("ui test matrix: %d / %d"%(cnt, lenght), end="\r")
+		print("iu test matrix: %d / %d"%(cnt, lenght), end="\r")
 		if row['reviewerID'] in user_id_dict.keys():
 			iu_matrix_test[test_item_id_dict[row['asin']], user_id_dict[row['reviewerID']]] = int(row['overall'])
 		cnt += 1
 	iu_sparse_matrix_test = scipy.sparse.csr_matrix(iu_matrix_test)
-	print("density of ui test matrix is: %.4f%%"%(100*len(find(iu_sparse_matrix_test)[0])/(iu_sparse_matrix_test.shape[0]*iu_sparse_matrix_test.shape[1])))
+	print("density of iu test matrix is: %.4f%%"%(100*len(find(iu_sparse_matrix_test)[0])/(iu_sparse_matrix_test.shape[0]*iu_sparse_matrix_test.shape[1])))
 	scipy.sparse.save_npz(foutput2, iu_sparse_matrix_test)
 	print("iu matrix generated done!")
 
