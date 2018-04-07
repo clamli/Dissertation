@@ -10,10 +10,8 @@ finput_title = "Data/title"
 finput_description = "Data/description"
 finput_train_item_id = "Data/train_item_id"
 finput_test_item_id = "Data/test_item_id"
-foutput_title_similarity_train = "Data/title_similarity_matrix_train"
-foutput_title_similarity_test = "Data/title_similarity_matrix_test"
-foutput_description_similarity_train = "Data/description_similarity_matrix_train"
-foutput_description_similarity_test = "Data/description_similarity_matrix_test"
+foutput_title_similarity = "Data/title_similarity_matrix"
+foutput_description_similarity = "Data/description_similarity_matrix"
 '''
 
 if (__name__ == '__main__'):
@@ -21,12 +19,8 @@ if (__name__ == '__main__'):
 	finput_topic_num = int(sys.argv[1])
 	finput_title = sys.argv[2]
 	finput_description = sys.argv[3]
-	finput_train_item_id = sys.argv[4]
-	finput_test_item_id = sys.argv[5]
-	foutput_title_similarity_train = sys.argv[6]
-	foutput_title_similarity_test = sys.argv[7]
-	foutput_description_similarity_train = sys.argv[8]
-	foutput_description_similarity_test = sys.argv[9]
+	foutput_title_similarity = sys.argv[4]
+	foutput_description_similarity = sys.argv[5]
 
 	#### read into item title and description information (dict: {id : content})
 	dict_title = rw.readffile(finput_title)
@@ -47,21 +41,19 @@ if (__name__ == '__main__'):
 	#### generate train/test item similarity matrix
 	df_title_similarity_matrix = pd.DataFrame(np.array(title_similarity),index=list(dict_title.keys()),columns=list(dict_title.keys()))
 	df_description_similarity_matrix = pd.DataFrame(np.array(description_similarity),index=list(dict_description.keys()),columns=list(dict_description.keys()))
-	train_item_id = rw.readffile(finput_train_item_id)
-	test_item_id = rw.readffile(finput_test_item_id)
-	#### title/train
-	df_title_similarity_matrix_train = df_title_similarity_matrix.loc[list(train_item_id.keys()), list(train_item_id.keys())]
-	#### title/test
-	df_title_similarity_matrix_test = df_title_similarity_matrix.loc[list(test_item_id.keys()), list(test_item_id.keys())]
-	#### description/train
-	df_description_similarity_matrix_train = df_description_similarity_matrix.loc[list(train_item_id.keys()), list(train_item_id.keys())]
-	#### description/test
-	df_description_similarity_matrix_test = df_description_similarity_matrix.loc[list(test_item_id.keys()), list(test_item_id.keys())]
+	# train_item_id = rw.readffile(finput_train_item_id)
+	# test_item_id = rw.readffile(finput_test_item_id)
+	# #### title/train
+	# df_title_similarity_matrix_train = df_title_similarity_matrix.loc[list(train_item_id.keys()), list(train_item_id.keys())]
+	# #### title/test
+	# df_title_similarity_matrix_test = df_title_similarity_matrix.loc[list(test_item_id.keys()), list(test_item_id.keys())]
+	# #### description/train
+	# df_description_similarity_matrix_train = df_description_similarity_matrix.loc[list(train_item_id.keys()), list(train_item_id.keys())]
+	# #### description/test
+	# df_description_similarity_matrix_test = df_description_similarity_matrix.loc[list(test_item_id.keys()), list(test_item_id.keys())]
 	print("similarity matrix generated done!")
 
 	#### write data into files
-	rw.write2file(df_title_similarity_matrix_train, foutput_title_similarity_train)
-	rw.write2file(df_title_similarity_matrix_test, foutput_title_similarity_test)
-	rw.write2file(df_description_similarity_matrix_train, foutput_description_similarity_train)
-	rw.write2file(df_description_similarity_matrix_test, foutput_description_similarity_test)
+	rw.write2file(df_title_similarity_matrix, foutput_title_similarity)
+	rw.write2file(df_description_similarity_matrix, foutput_description_similarity)
 	print("file saved done!")
