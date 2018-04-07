@@ -19,5 +19,13 @@
 - description: 分词 + LDA主题模型（topic number = 15）
 - 未使用price（缺失值太多）
 - 未使用category（同类商品）
-- 命令：`python item_similarity.py [topic number, file1, ..., file8]`
+- 命令：`python item_similarity.py [topic number, file1, ..., file4]`
+
+##### 商品description和title相似度权重生成
+
+- non linear regression
+- Similarity(i1, i2) = weight1 * S_title(i1) + weight2 * S_description(i2)
+- 命令：
+  - `python similarity_parameters.py [file1, ..., file7]`
+  - `fitnlm(path, param1, param2)`
 
