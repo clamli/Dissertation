@@ -29,3 +29,9 @@
   - `python similarity_parameters.py [file1, ..., file7]`
   - `fitnlm(path, param1, param2)`
 
+
+##### 用户相似度生成
+
+- 评分相似度
+- 命令：`python user_similarity.py [file1, ..., file3]`
+
