@@ -35,3 +35,9 @@
 - 评分相似度
 - 命令：`python user_similarity.py [file1, ..., file3]`
 
+
+##### 用户聚类
+
+- 用户聚类依靠用户相似度作为距离度量，使用K-medoids作为聚类算法
+- 问题主要存在于：由于评分稀疏，很多用户之间距离为0
+- 命令：`python user_clustering.py input_file number_of_clusters output_file`
