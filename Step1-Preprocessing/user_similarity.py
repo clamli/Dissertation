@@ -41,6 +41,8 @@ if (__name__ == '__main__'):
 		denominator1 = denominatorM[i]
 		denominator2 = np.sum((flag[:, i].reshape(row_num, 1))*rating_matrix_train_2, axis = 0)
 		user_similarity_matrix[i] = nominatorM[i] / (denominator1**0.5 * denominator2**0.5 + 1e-5)
+	# or it will be 0 for some users
+	np.fill_diagonal(user_similarity_matrix, 1)
 	print("\ndone!")
 
 	# transfer to dataframe and save to file
