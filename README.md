@@ -41,3 +41,12 @@
 - 用户聚类依靠用户相似度作为距离度量，使用K-medoids作为聚类算法
 - 问题主要存在于：由于评分稀疏，很多用户之间距离为0
 - 命令：`python user_clustering.py input_file number_of_clusters output_file`
+
+##### 建树前的准备工作
+
+- 生成用户聚类对任一物品的平均评分，便于计算时直接调用
+- 利用非线性回归拟合的参数生成相似度矩阵
+- 命令：`python buildtree_preparation.py input_file init_ptitle init_pdescrip output_file`
+
+#### Step2 - 建树
+
