@@ -50,3 +50,9 @@
 
 #### Step2 - 建树
 
+- 树的生成：
+  - 三叉树，对应不喜欢、一般般喜欢和喜欢三个节点
+  - 生成的节点信息用*self.tree*和*self.node_interval*两个变量保存
+- 预测评分：
+  - pass
+- 命令：`python build_tree.py [input_file1, ..., input_file3] desired_depth`

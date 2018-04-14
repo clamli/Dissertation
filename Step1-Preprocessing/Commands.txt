@@ -5,3 +5,4 @@ python similarity_parameters.py "Data/title_similarity_matrix" "Data/description
 python user_similarity.py "Data/uid" "Data/iu_sparse_matrix_train.npz" "Data/user_similarity_matrix"
 python user_clustering.py "Data/user_similarity_matrix" 200 "Data/user_cluster_set"
 python buildtree_preparation.py "Data/iu_sparse_matrix_train.npz" "Data/title_similarity_matrix" "Data/description_similarity_matrix" "Data/user_cluster_set" "Data/train_item_id" "Data/nonlinreg" 1.0 1.0 "Data/iuclst_rating_matrix"
+python build_tree.py "../Step1-Preprocessing/Data/iu_sparse_matrix_train.npz" "../Step1-Preprocessing/Data/iuclst_rating_matrix" "../Step1-Preprocessing/Data/user_cluster_set" 5
