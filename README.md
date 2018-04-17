@@ -48,11 +48,12 @@
 - 利用非线性回归拟合的参数生成相似度矩阵
 - 命令：`python buildtree_preparation.py input_file init_ptitle init_pdescrip output_file`
 
-#### Step2 - 建树
+#### Step2 - 建树及预测
 
 - 树的生成：
   - 三叉树，对应不喜欢、一般般喜欢和喜欢三个节点
   - 生成的节点信息用*self.tree*和*self.node_interval*两个变量保存
 - 预测评分：
-  - pass
+  - 利用Spark的mllib包实现ALS Matrix Factorization
+  - 输出伪物品（每个节点）和用户对应的latent vector
 - 命令：`python build_tree.py [input_file1, ..., input_file3] desired_depth`

@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+from MatrixFactorization import MatrixFactorization
 
 class DecisionTree:
 
@@ -19,6 +21,9 @@ class DecisionTree:
 		for i in range(depth):
 			self.node_num += 3**i
 
+		# pseudo item and user profile
+		self.pseudo_item = pd.DataFrame(columns=['item_id', 'pseudo_item_profile'])
+		self.user_profile = pd.DataFrame(columns=['user_profile'])
 
 	def errorCalculation(self, item_in_node):
 		sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(item_in_node)]
@@ -34,7 +39,7 @@ class DecisionTree:
 		opt_item_in_left_child = []
 		opt_item_in_middle_child = []
 		opt_item_in_right_child = []
-		item_in_node = self.tree[self.node_interval[cur_depth][cur_index][0]:self.node_interval[cur_depth][cur_index][1]]
+		item_in_node = self.tree[self.node_interval[cur_depth][cur_index][0]:self.node_interval[cur_depth][cur_index][1]+1]
 		ratings = self.iuclst_rating_matrix[np.ix_(item_in_node)]
 		for user_cluster_id in self.user_cluster_id_set:
 			# print(user_cluster_id)
@@ -67,12 +72,16 @@ class DecisionTree:
 
 	def dividToChild(self, optRes, cur_depth, cur_index):
 		# update tree
-		self.tree[self.node_interval[cur_depth][cur_index][0]:self.node_interval[cur_depth][cur_index][1]] = optRes[0] + optRes[1] + optRes[2]
-		interval1 = self.node_interval[cur_depth][cur_index][0] + len(optRes[0]) - 1
+		self.tree[self.node_interval[cur_depth][cur_index][0]:self.node_interval[cur_depth][cur_index][1]+1] = optRes[0] + optRes[1] + optRes[2]
+		if len(self.node_interval[cur_depth+1]) == 0:
+			begin = 0
+		else:
+			begin = self.node_interval[cur_depth+1][-1][1] + 1
+		interval1 = begin + len(optRes[0]) - 1
 		interval2 = interval1 + len(optRes[1])
 		interval3 = interval2 + len(optRes[2])
 		# left child interval
-		self.node_interval[cur_depth+1].append([self.node_interval[cur_depth][cur_index][0], interval1])
+		self.node_interval[cur_depth+1].append([begin, interval1])
 		# middle child interval
 		self.node_interval[cur_depth+1].append([interval1+1, interval2])
 		# right child interval
@@ -100,14 +109,54 @@ class DecisionTree:
 		self.user_cluster_id_set.append(opt_user_cluster_id)
 
 
-	def build(self):
+	def buildTreeModel(self):
 		self.treeConstruction(0, 0)
 
 
 
+	def buildPredModel(self):
+		train_lst = []
+		length = len(self.node_interval[self.depth_threshold-1])
 
+		# generate input for spark ALS train
+		for index, interval in zip(range(length), self.node_interval[self.depth_threshold-1]):
+			print("%d/%d"%(index+1, length), end="\r")
+			cur_depth = self.depth_threshold-1
+			cur_index = index
+			while interval[1] - interval[0] == -1:
+				cur_depth -= 1
+				cur_index = int(cur_index/3)
+				interval = self.node_interval[cur_depth][cur_index]
+			self.pseudo_item.loc[index] = [self.tree[interval[0]:interval[1]+1], []]
 
+			sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(self.tree[interval[0]:interval[1]+1])]
+			# calculate average ratings for pseudo item to users
+			avg_rating = np.sum(sub_rating_matrix, axis=0) / (1e-5+sub_rating_matrix.getnnz(axis=0))
+			uid = avg_rating.nonzero()[1]
+			rating = np.array(avg_rating[np.ix_([0], uid)])[0]
+			for i in range(len(uid)):
+				train_lst.append((uid[i], index, float(rating[i])))
 
+		#################################### Spark ####################################
+		MF = MatrixFactorization()
+		try:
+			user_feature, item_feature = MF.matrix_factorization(train_lst)
+		except:
+			MF.end()
+			MF = MatrixFactorization()
+			user_feature, item_feature = MF.matrix_factorization(train_lst)
+		length = len(item_feature)
+		for i, each in zip(range(length), item_feature):
+			print("item profiles: %d/%d"%(i+1, length), end="\r")
+			self.pseudo_item.loc[i][1] = each[1].tolist()
+		print("\n")
+		length = len(user_feature)
+		for i, each in zip(range(length), user_feature):
+			print("user profiles: %d/%d"%(i+1, length), end="\r")
+			self.user_profile.loc[i] = [each[1].tolist()]
+		print("\n")
+		MF.end()
+		#################################### Spark ####################################
 
 
 

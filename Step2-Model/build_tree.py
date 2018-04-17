@@ -25,5 +25,10 @@ if (__name__ == '__main__'):
 
 	# build tree
 	dt_model = DecisionTree(iu_sparse_matrix_train, iuclst_rating_matrix, user_cluster_set, finput_desired_depth)
-	dt_model.build()
+	dt_model.buildTreeModel()
 	print("\ntree construction finished")
+	dt_model.buildPredModel()
+	print("prediction model finished")
+
+	
+	
