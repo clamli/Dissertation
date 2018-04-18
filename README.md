@@ -53,7 +53,10 @@
 - 树的生成：
   - 三叉树，对应不喜欢、一般般喜欢和喜欢三个节点
   - 生成的节点信息用*self.tree*和*self.node_interval*两个变量保存
-- 预测评分：
+- 构建预测模型：
   - 利用Spark的mllib包实现ALS Matrix Factorization
-  - 输出伪物品（每个节点）和用户对应的latent vector
-- 命令：`python build_tree.py [input_file1, ..., input_file3] desired_depth`
+  - 生成伪物品（每个节点）和用户对应的latent vector
+- 预测评分：
+  - 对每一个test商品，从树的根节点开始向下走，利用目标叶子节点的latent vector作为它的特征向量
+  - 利用特征向量和所有物品的特征向量的点积预测评分，计算RMSE
+- 命令：`python build_tree.py [input_file1, ..., input_file4] desired_depth`
