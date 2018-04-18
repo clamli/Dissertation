@@ -4,8 +4,9 @@ from MatrixFactorization import MatrixFactorization
 
 class DecisionTree:
 
-	def __init__(self, iu_sparse_matrix_train, iuclst_rating_matrix, user_cluster_set, depth):
+	def __init__(self, iu_sparse_matrix_train, iu_sparse_matrix_test, iuclst_rating_matrix, user_cluster_set, depth):
 		self.iu_sparse_matrix_train = iu_sparse_matrix_train
+		self.iu_sparse_matrix_test = iu_sparse_matrix_test
 		self.iuclst_rating_matrix = iuclst_rating_matrix
 		self.user_cluster_set = user_cluster_set
 		self.user_cluster_id_set = list(range(0, len(user_cluster_set)))
@@ -15,6 +16,7 @@ class DecisionTree:
 		self.depth_threshold = depth
 		self.node_interval = [[] for i in range(depth)]
 		self.node_interval[0].append([0, self.item_num-1])
+		self.user_set_id = [[] for i in range(depth-1)]
 		# progress record
 		self.cur_node = 1
 		self.node_num = 0
@@ -98,7 +100,9 @@ class DecisionTree:
 		self.cur_node += 3
 
 		optRes, opt_user_cluster_id = self.findOptUserCluster(cur_depth, cur_index)
+		self.user_set_id[cur_depth].append(opt_user_cluster_id)
 		self.dividToChild(optRes, cur_depth, cur_index)
+		
 		self.user_cluster_id_set.remove(opt_user_cluster_id)
 		# left child
 		self.treeConstruction(cur_depth+1, cur_index*3)
@@ -148,7 +152,7 @@ class DecisionTree:
 		length = len(item_feature)
 		for i, each in zip(range(length), item_feature):
 			print("item profiles: %d/%d"%(i+1, length), end="\r")
-			self.pseudo_item.loc[i][1] = each[1].tolist()
+			self.pseudo_item.loc[i][1] = np.array(each[1])
 		print("\n")
 		length = len(user_feature)
 		for i, each in zip(range(length), user_feature):
@@ -159,5 +163,31 @@ class DecisionTree:
 		#################################### Spark ####################################
 
 
-
-
+	def predict(self):
+		iuclst_rating_matrix_test = self.iuclst_rating_matrix[self.item_num:, :]
+		iu_pred_ratings_test = np.zeros(self.iu_sparse_matrix_test.shape)
+		user_profile_array = np.array(list(self.user_profile['user_profile']))
+		length = iuclst_rating_matrix_test.shape[0]
+		for i in range(iuclst_rating_matrix_test.shape[0]):
+			print("prediction: %d/%d"%(i+1, length), end="\r")
+			cur_depth = 0
+			cur_index = 0
+			# print(self.node_interval)
+			while self.node_interval[cur_depth][cur_index][1] - self.node_interval[cur_depth][cur_index][1] != -1:
+				pre_depth = cur_depth
+				pre_index = cur_index
+				if cur_depth == self.depth_threshold - 1:
+					break
+				rating = iuclst_rating_matrix_test[i][self.user_set_id[cur_depth][cur_index]]
+				if rating >= 4:   # right
+					cur_index = cur_index*3 + 2
+				elif rating <= 2.5:   # left
+					cur_index = cur_index*3
+				else:     # middle
+					cur_index = cur_index*3 + 1
+				cur_depth += 1
+			iu_pred_ratings_test[i, :] = np.dot(np.array(list(self.user_profile['user_profile'])), self.pseudo_item.iloc[pre_index]['pseudo_item_profile'])
+		
+		# calculate RMSE
+		iu_true_ratings_test = self.iu_sparse_matrix_test.toarray()
+		return (np.sum(((iu_true_ratings_test != 0) * iu_pred_ratings_test - iu_true_ratings_test)**2) / np.sum(iu_true_ratings_test != 0))**0.5
