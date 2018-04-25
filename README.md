@@ -1,11 +1,11 @@
 ## 主动学习推荐系统
 
-#### 概述
+#### 0. 概述
 
 - 数据集：[Amazon商品数据集](http://jmcauley.ucsd.edu/data/amazon/)
 - 编程环境：Python, Matlab, Markdown
 
-#### Step1 - 数据预处理
+#### 1. 数据预处理
 
 ##### 商品信息
 
@@ -53,7 +53,7 @@
 - 利用非线性回归拟合的参数生成相似度矩阵
 - 命令：`python buildtree_preparation.py input_file init_ptitle init_pdescrip output_file`
 
-#### Step2 - 建树及预测
+#### 2. 建树及预测
 
 - 树的生成：
   - 三叉树，对应不喜欢、一般般喜欢和喜欢三个节点
@@ -66,12 +66,12 @@
   - 利用特征向量和所有物品的特征向量的点积预测评分，计算RMSE（对每一层都计算）
 - 命令：`python build_tree.py [input_file1, ..., input_file4] desired_depth`
 
-#### 运行
+#### 3. 运行
 
 - 利用*Python*脚本运行上述所有步骤：`python script.py`
 - 代码开头数据集名称（*dataset*）请相应更改
 
-#### 当前问题
+#### 4. 当前问题
 
 - 对All_Beauty数据集来说树的第一层预测效果最好，分析原因可能如下：
   - 数据集过于稀疏（0.02%），导致每一用户基本只有一个评分，第一层作为伪物品作矩阵分解时评分满，效果好，越往下效果越差。
