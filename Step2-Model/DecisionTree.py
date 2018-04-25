@@ -24,8 +24,8 @@ class DecisionTree:
 			self.node_num += 3**i
 
 		# pseudo item and user profile
-		self.pseudo_item = pd.DataFrame(columns=['item_id', 'pseudo_item_profile'])
-		self.user_profile = pd.DataFrame(columns=['user_profile'])
+		self.pseudo_item = {}
+		self.user_profile = {}
 
 	def errorCalculation(self, item_in_node):
 		sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(item_in_node)]
@@ -119,75 +119,80 @@ class DecisionTree:
 
 
 	def buildPredModel(self):
-		train_lst = []
-		length = len(self.node_interval[self.depth_threshold-1])
+		for test_depth in range(self.depth_threshold):
+			print("level %d"%(test_depth+1))
+			self.pseudo_item[test_depth] = pd.DataFrame(columns=['item_id', 'pseudo_item_profile'])
+			self.user_profile[test_depth] = pd.DataFrame(columns=['user_profile'])
+			train_lst = []
+			length = len(self.node_interval[test_depth])
 
-		# generate input for spark ALS train
-		for index, interval in zip(range(length), self.node_interval[self.depth_threshold-1]):
-			print("%d/%d"%(index+1, length), end="\r")
-			cur_depth = self.depth_threshold-1
-			cur_index = index
-			while interval[1] - interval[0] == -1:
-				cur_depth -= 1
-				cur_index = int(cur_index/3)
-				interval = self.node_interval[cur_depth][cur_index]
-			self.pseudo_item.loc[index] = [self.tree[interval[0]:interval[1]+1], []]
+			# generate input for spark ALS train
+			for index, interval in zip(range(length), self.node_interval[test_depth]):
+				print("%d/%d"%(index+1, length), end="\r")
+				cur_depth = test_depth
+				cur_index = index
+				while interval[1] - interval[0] == -1:
+					cur_depth -= 1
+					cur_index = int(cur_index/3)
+					interval = self.node_interval[cur_depth][cur_index]
+				self.pseudo_item[test_depth].loc[index] = [self.tree[interval[0]:interval[1]+1], []]
 
-			sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(self.tree[interval[0]:interval[1]+1])]
-			# calculate average ratings for pseudo item to users
-			avg_rating = np.sum(sub_rating_matrix, axis=0) / (1e-5+sub_rating_matrix.getnnz(axis=0))
-			uid = avg_rating.nonzero()[1]
-			rating = np.array(avg_rating[np.ix_([0], uid)])[0]
-			for i in range(len(uid)):
-				train_lst.append((uid[i], index, float(rating[i])))
+				sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(self.tree[interval[0]:interval[1]+1])]
+				# calculate average ratings for pseudo item to users
+				avg_rating = np.sum(sub_rating_matrix, axis=0) / (1e-5+sub_rating_matrix.getnnz(axis=0))
+				uid = avg_rating.nonzero()[1]
+				rating = np.array(avg_rating[np.ix_([0], uid)])[0]
+				for i in range(len(uid)):
+					train_lst.append((uid[i], index, float(rating[i])))
 
-		#################################### Spark ####################################
-		MF = MatrixFactorization()
-		try:
-			user_feature, item_feature = MF.matrix_factorization(train_lst)
-		except:
-			MF.end()
+			#################################### Spark ####################################
 			MF = MatrixFactorization()
-			user_feature, item_feature = MF.matrix_factorization(train_lst)
-		length = len(item_feature)
-		for i, each in zip(range(length), item_feature):
-			print("item profiles: %d/%d"%(i+1, length), end="\r")
-			self.pseudo_item.loc[i][1] = np.array(each[1])
-		print("\n")
-		length = len(user_feature)
-		for i, each in zip(range(length), user_feature):
-			print("user profiles: %d/%d"%(i+1, length), end="\r")
-			self.user_profile.loc[i] = [each[1].tolist()]
-		print("\n")
-		MF.end()
-		#################################### Spark ####################################
+			try:
+				user_feature, item_feature = MF.matrix_factorization(train_lst)
+			except:
+				MF.end()
+				MF = MatrixFactorization()
+				user_feature, item_feature = MF.matrix_factorization(train_lst)
+			length = len(item_feature)
+			for i, each in zip(range(length), item_feature):
+				print("item profiles: %d/%d"%(i+1, length), end="\r")
+				self.pseudo_item[test_depth].loc[i][1] = np.array(each[1])
+			print("\n")
+			length = len(user_feature)
+			for i, each in zip(range(length), user_feature):
+				print("user profiles: %d/%d"%(i+1, length), end="\r")
+				self.user_profile[test_depth].loc[i] = [each[1].tolist()]
+			print("\n")
+			MF.end()
+			#################################### Spark ####################################
 
 
 	def predict(self):
 		iuclst_rating_matrix_test = self.iuclst_rating_matrix[self.item_num:, :]
 		iu_pred_ratings_test = np.zeros(self.iu_sparse_matrix_test.shape)
-		user_profile_array = np.array(list(self.user_profile['user_profile']))
 		length = iuclst_rating_matrix_test.shape[0]
-		for i in range(iuclst_rating_matrix_test.shape[0]):
-			print("prediction: %d/%d"%(i+1, length), end="\r")
-			cur_depth = 0
-			cur_index = 0
-			# print(self.node_interval)
-			while self.node_interval[cur_depth][cur_index][1] - self.node_interval[cur_depth][cur_index][1] != -1:
-				pre_depth = cur_depth
-				pre_index = cur_index
-				if cur_depth == self.depth_threshold - 1:
-					break
-				rating = iuclst_rating_matrix_test[i][self.user_set_id[cur_depth][cur_index]]
-				if rating >= 4:   # right
-					cur_index = cur_index*3 + 2
-				elif rating <= 2.5:   # left
-					cur_index = cur_index*3
-				else:     # middle
-					cur_index = cur_index*3 + 1
-				cur_depth += 1
-			iu_pred_ratings_test[i, :] = np.dot(np.array(list(self.user_profile['user_profile'])), self.pseudo_item.iloc[pre_index]['pseudo_item_profile'])
-		
-		# calculate RMSE
-		iu_true_ratings_test = self.iu_sparse_matrix_test.toarray()
-		return (np.sum(((iu_true_ratings_test != 0) * iu_pred_ratings_test - iu_true_ratings_test)**2) / np.sum(iu_true_ratings_test != 0))**0.5
+		for test_depth in range(self.depth_threshold):
+			for i in range(iuclst_rating_matrix_test.shape[0]):
+				print("prediction: %d/%d"%(i+1, length), end="\r")
+				cur_depth = 0
+				cur_index = 0
+				# print(self.node_interval)
+				while self.node_interval[cur_depth][cur_index][1] - self.node_interval[cur_depth][cur_index][1] != -1:
+					pre_depth = cur_depth
+					pre_index = cur_index
+					if cur_depth == test_depth:
+						break
+					rating = iuclst_rating_matrix_test[i][self.user_set_id[cur_depth][cur_index]]
+					if rating >= 4:   # right
+						cur_index = cur_index*3 + 2
+					elif rating <= 2.5:   # left
+						cur_index = cur_index*3
+					else:     # middle
+						cur_index = cur_index*3 + 1
+					cur_depth += 1
+				iu_pred_ratings_test[i, :] = np.dot(np.array(list(self.user_profile[test_depth]['user_profile'])), self.pseudo_item[test_depth].iloc[pre_index]['pseudo_item_profile'])
+			
+			# calculate RMSE
+			iu_true_ratings_test = self.iu_sparse_matrix_test.toarray()
+			RMSE = (np.sum(((iu_true_ratings_test != 0) * iu_pred_ratings_test - iu_true_ratings_test)**2) / np.sum(iu_true_ratings_test != 0))**0.5
+			print("level %d: %f"%(test_depth+1, RMSE))
