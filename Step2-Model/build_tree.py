@@ -33,8 +33,7 @@ if (__name__ == '__main__'):
 	dt_model.buildPredModel()
 	print("prediction model finished")
 	# predict
-	RMSE = dt_model.predict()
-	print("\nRMSE = %.3f"%RMSE)
+	dt_model.predict()
 
 	
 	
