@@ -1,5 +1,10 @@
 ## 主动学习推荐系统
 
+#### 概述
+
+- 数据集：[Amazon商品数据集](http://jmcauley.ucsd.edu/data/amazon/)
+- 编程环境：Python, Matlab, Markdown
+
 #### Step1 - 数据预处理
 
 ##### 商品信息
@@ -55,8 +60,19 @@
   - 生成的节点信息用*self.tree*和*self.node_interval*两个变量保存
 - 构建预测模型：
   - 利用Spark的mllib包实现ALS Matrix Factorization
-  - 生成伪物品（每个节点）和用户对应的latent vector
+  - 生成伪物品（每个节点）和用户对应的latent vector（对每一层都计算）
 - 预测评分：
   - 对每一个test商品，从树的根节点开始向下走，利用目标叶子节点的latent vector作为它的特征向量
-  - 利用特征向量和所有物品的特征向量的点积预测评分，计算RMSE
+  - 利用特征向量和所有物品的特征向量的点积预测评分，计算RMSE（对每一层都计算）
 - 命令：`python build_tree.py [input_file1, ..., input_file4] desired_depth`
+
+#### 运行
+
+- 利用*Python*脚本运行上述所有步骤：`python script.py`
+- 代码开头数据集名称（*dataset*）请相应更改
+
+#### 当前问题
+
+- 对All_Beauty数据集来说树的第一层预测效果最好，分析原因可能如下：
+  - 数据集过于稀疏（0.02%），导致每一用户基本只有一个评分，第一层作为伪物品作矩阵分解时评分满，效果好，越往下效果越差。
+  - 点的划分过于不均匀，使得伪物品选择不优秀，可试平均划分。
