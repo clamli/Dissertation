@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 import scipy.sparse
 from scipy.sparse import csr_matrix, find
@@ -41,11 +42,15 @@ if (__name__ == '__main__'):
 
 	# run matlab script and get parameters for title and description
 	print("call matlab script....")
+	cur_path = os.getcwd()
+	os.chdir('D:\GitCode\Dissertation\Step1-Preprocessing')
 	eng = matlab.engine.start_matlab()
 	x = eng.my_fitnlm(finput_nonlinreg, finput_init_tp, finput_init_dp, nargout=3)
 	theta1, theta2 = x[0], x[1]
 	eng.quit()
 	sim_matrix = theta1*title_sim_matrix + theta2*description_sim_matrix
+	os.chdir(cur_path)
+	print("matlab finished")
 
 	# extract similarity matrix for training and test item
 	resort_id = list(train_item_id.keys()) + list(test_item_id.keys())

@@ -1,7 +1,7 @@
 import os
 
 
-dataset = "All_Beauty"
+dataset = "Automotive"
 METADATA = "Dataset/%s/meta_%s.json.gz"%(dataset, dataset)
 REVIEWDATA = "Dataset/%s/reviews_%s.json.gz"%(dataset, dataset)
 TITLEINFO = "Data/%s/title"%(dataset)
