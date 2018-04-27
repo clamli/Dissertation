@@ -17,6 +17,7 @@ class DecisionTree:
 		self.node_interval = [[] for i in range(depth)]
 		self.node_interval[0].append([0, self.item_num-1])
 		self.user_set_id = [[] for i in range(depth-1)]
+		self.node_assc_rating = [[] for i in range(depth-1)]
 		# progress record
 		self.cur_node = 1
 		self.node_num = 0
@@ -43,15 +44,24 @@ class DecisionTree:
 		opt_item_in_right_child = []
 		item_in_node = self.tree[self.node_interval[cur_depth][cur_index][0]:self.node_interval[cur_depth][cur_index][1]+1]
 		ratings = self.iuclst_rating_matrix[np.ix_(item_in_node)]
+
+		if len(item_in_node) == 0:
+			return [[], [], []], -1, -1, -1
+
 		for user_cluster_id in self.user_cluster_id_set:
 			# print(user_cluster_id)
 			ratings_for_cluster = ratings[:, user_cluster_id]
+			sorted_array = np.sort(ratings_for_cluster)
+			itve1 = sorted_array[int(len(sorted_array)/3)]
+			itve2 = sorted_array[int((2*len(sorted_array))/3)]
 			item_in_left_child = []
 			item_in_middle_child = []
 			item_in_right_child = []
 			for i in range(ratings_for_cluster.shape[0]):
+				# if ratings_for_cluster[i] >= itve2:
 				if ratings_for_cluster[i] >= 4:
 					item_in_right_child.append(item_in_node[i])
+				# elif ratings_for_cluster[i] <= itve1:
 				elif ratings_for_cluster[i] <= 2.5:
 					item_in_left_child.append(item_in_node[i])
 				else:
@@ -65,11 +75,13 @@ class DecisionTree:
 			if min_error == -1 or error < min_error:
 				min_error = error
 				opt_user_cluster_id = user_cluster_id
+				opt_itve1 = itve1
+				opt_itve2 = itve2
 				opt_item_in_left_child = item_in_left_child[:]
 				opt_item_in_middle_child = item_in_middle_child[:]
 				opt_item_in_right_child = item_in_right_child[:]
 
-		return [opt_item_in_left_child, opt_item_in_middle_child, opt_item_in_right_child], opt_user_cluster_id
+		return [opt_item_in_left_child, opt_item_in_middle_child, opt_item_in_right_child], opt_user_cluster_id, opt_itve1, opt_itve2
 
 
 	def dividToChild(self, optRes, cur_depth, cur_index):
@@ -99,11 +111,14 @@ class DecisionTree:
 			return
 		self.cur_node += 3
 
-		optRes, opt_user_cluster_id = self.findOptUserCluster(cur_depth, cur_index)
+		# opt_itve1 -> left node; opt_itve2 -> right node
+		optRes, opt_user_cluster_id, opt_itve1, opt_itve2 = self.findOptUserCluster(cur_depth, cur_index)
 		self.user_set_id[cur_depth].append(opt_user_cluster_id)
+		self.node_assc_rating[cur_depth].append([opt_itve1, opt_itve2])
 		self.dividToChild(optRes, cur_depth, cur_index)
 		
-		self.user_cluster_id_set.remove(opt_user_cluster_id)
+		if opt_user_cluster_id != -1:
+			self.user_cluster_id_set.remove(opt_user_cluster_id)
 		# left child
 		self.treeConstruction(cur_depth+1, cur_index*3)
 		# middle child
@@ -183,11 +198,13 @@ class DecisionTree:
 					if cur_depth == test_depth:
 						break
 					rating = iuclst_rating_matrix_test[i][self.user_set_id[cur_depth][cur_index]]
-					if rating >= 4:   # right
+					# if rating >= self.node_assc_rating[cur_depth][cur_index][1]:   # right
+					if rating >= 4:
 						cur_index = cur_index*3 + 2
-					elif rating <= 2.5:   # left
+					# elif rating <= self.node_assc_rating[cur_depth][cur_index][0]:   # left
+					elif rating <= 2.5:
 						cur_index = cur_index*3
-					else:     # middle
+					else:     					# middle
 						cur_index = cur_index*3 + 1
 					cur_depth += 1
 				iu_pred_ratings_test[i, :] = np.dot(np.array(list(self.user_profile[test_depth]['user_profile'])), self.pseudo_item[test_depth].iloc[pre_index]['pseudo_item_profile'])
