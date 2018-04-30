@@ -19,7 +19,7 @@ CLUSTER_NUM = 200
 INIT_PARAM_TITLE = 1.0
 INIT_PARAM_DESCRIPTION = 1.0
 DEPTH_OF_TREE = 5
-NON_LINEAR = "Data/%s/nonlinreg.mat"%(dataset)
+NON_LINEAR = "D:/GitCode/Dissertation/Data/%s/nonlinreg.mat"%(dataset)
 USER_CLUSTER = "Data/%s/user_cluster_set"%(dataset)
 USERCLUSTER_ITEM_RATING_MATRIX = "Data/%s/iuclst_rating_matrix"%(dataset)
 
