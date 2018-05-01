@@ -1,7 +1,7 @@
 import os
 
 
-dataset = "Automotive"
+dataset = "All_Beauty"
 METADATA = "Dataset/%s/meta_%s.json.gz"%(dataset, dataset)
 REVIEWDATA = "Dataset/%s/reviews_%s.json.gz"%(dataset, dataset)
 TITLEINFO = "Data/%s/title"%(dataset)
@@ -13,7 +13,7 @@ TRAINNPZ = "Data/%s/iu_sparse_matrix_train.npz"%(dataset)
 TESTNPZ = "Data/%s/iu_sparse_matrix_test.npz"%(dataset)
 UID = "Data/%s/uid"%(dataset)
 TRAINITEMID = "Data/%s/train_item_id"%(dataset)
-TESTITEMID = "Data/%s/test_item_id'"%(dataset)
+TESTITEMID = "Data/%s/test_item_id"%(dataset)
 TOPIC_NUM = 15
 CLUSTER_NUM = 200
 INIT_PARAM_TITLE = 1.0

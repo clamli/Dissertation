@@ -185,6 +185,7 @@ class DecisionTree:
 	def predict(self):
 		iuclst_rating_matrix_test = self.iuclst_rating_matrix[self.item_num:, :]
 		iu_pred_ratings_test = np.zeros(self.iu_sparse_matrix_test.shape)
+		iu_true_ratings_test = self.iu_sparse_matrix_test.toarray()
 		length = iuclst_rating_matrix_test.shape[0]
 		for test_depth in range(self.depth_threshold):
 			for i in range(iuclst_rating_matrix_test.shape[0]):
@@ -210,6 +211,5 @@ class DecisionTree:
 				iu_pred_ratings_test[i, :] = np.dot(np.array(list(self.user_profile[test_depth]['user_profile'])), self.pseudo_item[test_depth].iloc[pre_index]['pseudo_item_profile'])
 			
 			# calculate RMSE
-			iu_true_ratings_test = self.iu_sparse_matrix_test.toarray()
 			RMSE = (np.sum(((iu_true_ratings_test != 0) * iu_pred_ratings_test - iu_true_ratings_test)**2) / np.sum(iu_true_ratings_test != 0))**0.5
 			print("level %d: %f"%(test_depth+1, RMSE))

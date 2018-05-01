@@ -71,8 +71,15 @@
 - 利用*Python*脚本运行上述所有步骤：`python script.py`
 - 代码开头数据集名称（*dataset*）请相应更改
 
+#### 4. 对比实验
+
+- FDT (Factorized Deicision Tree)
+- CAL (Content-based Active Learning)
+- CBCF (Content-based Collaborative Filtering)
+
 #### 4. 当前问题
 
 - 对All_Beauty数据集来说树的第一层预测效果最好，分析原因可能如下：
   - 数据集过于稀疏（0.02%），导致每一用户基本只有一个评分，第一层作为伪物品作矩阵分解时评分满，效果好，越往下效果越差。
   - 点的划分过于不均匀，使得伪物品选择不优秀，可试平均划分。
+- 物品个数超过30万的Automotive集合上计算*item similarity*时出现*Memory Error*
