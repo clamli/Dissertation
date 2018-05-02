@@ -19,12 +19,16 @@ if (__name__ == '__main__'):
 	finput_topic_num = int(sys.argv[1])
 	finput_title = sys.argv[2]
 	finput_description = sys.argv[3]
-	foutput_title_similarity = sys.argv[4]
-	foutput_description_similarity = sys.argv[5]
+	finput_train_item_id = sys.argv[4]
+	finput_test_item_id = sys.argv[5]
+	foutput_title_similarity = sys.argv[6]
+	foutput_description_similarity = sys.argv[7]
 
 	#### read into item title and description information (dict: {id : content})
 	dict_title = rw.readffile(finput_title)
 	dict_description = rw.readffile(finput_description)
+	train_item_id = rw.readffile(finput_train_item_id)
+	test_item_id = rw.readffile(finput_test_item_id)
 
 	#### preprocess before LDA
 	dict_title_preprocessed = lda.texts_preprocess(dict_title)
@@ -33,14 +37,19 @@ if (__name__ == '__main__'):
 	list_description_preprocessed = list(dict_description_preprocessed.values())
 	print("text preprocessed done!")
 
-	#### generate item title and description similarity for all items
-	title_similarity = lda.LDA(texts=list_title_preprocessed, num_topics=finput_topic_num)
-	description_similarity = lda.LDA(texts=list_description_preprocessed, num_topics=finput_topic_num)
+	#### generate item title and description similarity for selected items
+	item_tt_id_lst = list(train_item_id.keys())+list(test_item_id.keys())
+	item_total_id_lst = list(dict_title.keys())
+	index_lst = []
+	for id in item_tt_id_lst:
+		index_lst.append(item_total_id_lst.index(id))
+	title_similarity = lda.LDA(texts=list_title_preprocessed, index_lst=index_lst, num_topics=finput_topic_num)
+	description_similarity = lda.LDA(texts=list_description_preprocessed, index_lst=index_lst, num_topics=finput_topic_num)
 	print("lda similarity calculated done!")
 
 	#### generate train/test item similarity matrix
-	df_title_similarity_matrix = pd.DataFrame(np.array(title_similarity),index=list(dict_title.keys()),columns=list(dict_title.keys()))
-	df_description_similarity_matrix = pd.DataFrame(np.array(description_similarity),index=list(dict_description.keys()),columns=list(dict_description.keys()))
+	df_title_similarity_matrix = pd.DataFrame(np.array(title_similarity),index=list(item_tt_id_lst.keys()),columns=list(item_tt_id_lst.keys()))
+	df_description_similarity_matrix = pd.DataFrame(np.array(description_similarity),index=list(item_tt_id_lst.keys()),columns=list(item_tt_id_lst.keys()))
 	# train_item_id = rw.readffile(finput_train_item_id)
 	# test_item_id = rw.readffile(finput_test_item_id)
 	# #### title/train

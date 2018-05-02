@@ -43,7 +43,7 @@ def texts_preprocess(input_dict):
     return output_dict
 
 
-def LDA(texts, num_topics=15):
+def LDA(texts, index_lst, num_topics=15):
     # 根据文本生成字典
     dictionary = corpora.Dictionary(texts)
 #     print(dictionary)
@@ -51,6 +51,7 @@ def LDA(texts, num_topics=15):
     
     # 根据字典，将每行文档都转换为索引的形式
     corpus = [dictionary.doc2bow(text) for text in texts]
+    corpus_selected = [corpus[index] for index in index_lst]
     # 逐行打印
 #     for line in corpus:
 #         print(line)
@@ -61,5 +62,5 @@ def LDA(texts, num_topics=15):
                           alpha='auto', eta='auto', minimum_probability=0.001)
     
     # 计算相似度
-    index = similarities.MatrixSimilarity(lda[corpus])
+    index = similarities.MatrixSimilarity(lda[corpus_selected])
     return index

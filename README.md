@@ -24,7 +24,7 @@
 - description: 分词 + LDA主题模型（topic number = 15）
 - 未使用price（缺失值太多）
 - 未使用category（同类商品）
-- 命令：`python item_similarity.py [topic number, file1, ..., file4]`
+- 命令：`python item_similarity.py [topic number, file1, ..., file6]`
 
 ##### 商品description和title相似度权重生成
 
