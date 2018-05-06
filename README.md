@@ -72,6 +72,7 @@
 
 - FDT (Factorized Deicision Tree)
 - CAL (Content-based Active Learning)
+	- `python content_based_active_learning.py dataset K`  (dataset是数据集的名字，K决定了选择TopK的用户进行query)
 - CBCF (Content-based Collaborative Filtering)
 
 ### 4. 当前问题

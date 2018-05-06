@@ -53,6 +53,7 @@ if (__name__ == '__main__'):
     nonzero_num = ui_matrix_test.getnnz()
     ui_matrix_test_arr = ui_matrix_test.toarray()
     RMSE = np.sum(((ui_matrix_test_arr != 0)*(pred_rating - ui_matrix_test_arr))**2 / nonzero_num)**0.5
+    print("RMSE: %.4f"%RMSE)
     MF.end()
 
     
