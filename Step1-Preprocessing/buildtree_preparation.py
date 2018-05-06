@@ -17,6 +17,7 @@ finput_nonlinreg = "Data/nonlinreg"
 finput_init_tp = 1.0
 finput_init_dp = 1.0
 foutput_iuclst_rating_matrix = "Data/iuclst_rating_matrix"
+foutput_item_sim_matrix = "Data/item_sim_matrix"
 '''
 
 if (__name__ == '__main__'):
@@ -31,6 +32,7 @@ if (__name__ == '__main__'):
 	finput_init_tp = float(sys.argv[8])
 	finput_init_dp = float(sys.argv[9])
 	foutput_iuclst_rating_matrix = sys.argv[10]
+	foutput_item_sim_matrix = sys.argv[11]
 
 	# load data
 	iu_rating_matrix_train = scipy.sparse.load_npz(finput_iu_rating_matrix_train)
@@ -50,6 +52,7 @@ if (__name__ == '__main__'):
 	eng.quit()
 	sim_matrix = theta1*title_sim_matrix + theta2*description_sim_matrix
 	os.chdir(cur_path)
+	rw.write2file(sim_matrix, foutput_item_sim_matrix)
 	print("matlab finished")
 
 	# extract similarity matrix for training and test item
