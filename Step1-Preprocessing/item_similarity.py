@@ -48,8 +48,8 @@ if (__name__ == '__main__'):
 	print("lda similarity calculated done!")
 
 	#### generate train/test item similarity matrix
-	df_title_similarity_matrix = pd.DataFrame(np.array(title_similarity),index=list(item_tt_id_lst.keys()),columns=list(item_tt_id_lst.keys()))
-	df_description_similarity_matrix = pd.DataFrame(np.array(description_similarity),index=list(item_tt_id_lst.keys()),columns=list(item_tt_id_lst.keys()))
+	df_title_similarity_matrix = pd.DataFrame(np.array(title_similarity),index=item_tt_id_lst,columns=item_tt_id_lst)
+	df_description_similarity_matrix = pd.DataFrame(np.array(description_similarity),index=item_tt_id_lst,columns=item_tt_id_lst)
 	# train_item_id = rw.readffile(finput_train_item_id)
 	# test_item_id = rw.readffile(finput_test_item_id)
 	# #### title/train

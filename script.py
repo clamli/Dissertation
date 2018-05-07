@@ -1,7 +1,7 @@
 import os
 
 
-dataset = "Automotive"
+dataset = "All_Beauty"
 METADATA = "Dataset/%s/meta_%s.json.gz"%(dataset, dataset)
 REVIEWDATA = "Dataset/%s/reviews_%s.json.gz"%(dataset, dataset)
 TITLEINFO = "Data/%s/title"%(dataset)
@@ -32,7 +32,7 @@ print("##################   user_information.py   ####################")
 os.system('python Step1-Preprocessing/user_information.py %s %s %s %s %s %s %s'%(REVIEWDATA, TITLEINFO, TRAINNPZ, TESTNPZ, UID, TRAINITEMID, TESTITEMID))
 print("\n")
 print("##################   item_similarity.py   ####################")
-os.system('python Step1-Preprocessing/item_similarity.py %s %s %s %s %s'%(TOPIC_NUM, TITLEINFO, DESCRIPTIONINFO, TITLESIM, DESCRIPTIONSIM))
+os.system('python Step1-Preprocessing/item_similarity.py %s %s %s %s %s %s %s'%(TOPIC_NUM, TITLEINFO, DESCRIPTIONINFO, TRAINITEMID, TESTITEMID, TITLESIM, DESCRIPTIONSIM))
 print("\n")
 print("##################   similarity_parameters.py   ####################")
 os.system('python Step1-Preprocessing/similarity_parameters.py %s %s %s %s %s %s %s'%(TITLESIM, DESCRIPTIONSIM, TRAINITEMID, TESTITEMID, TRAINNPZ, TESTNPZ, NON_LINEAR))
