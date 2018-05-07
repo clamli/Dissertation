@@ -1,7 +1,7 @@
 import os
 
 
-dataset = "All_Beauty"
+dataset = "Automotive"
 METADATA = "Dataset/%s/meta_%s.json.gz"%(dataset, dataset)
 REVIEWDATA = "Dataset/%s/reviews_%s.json.gz"%(dataset, dataset)
 TITLEINFO = "Data/%s/title"%(dataset)
@@ -44,7 +44,7 @@ print("##################   user_clustering.py   ####################")
 os.system('python Step1-Preprocessing/user_clustering.py %s %s %s'%(USERSIM, CLUSTER_NUM, USER_CLUSTER))
 print("\n")
 print("##################   buildtree_preparation.py   ####################")
-os.system('python Step1-Preprocessing/buildtree_preparation.py %s %s %s %s %s %s %s %s %s %s'%(TRAINNPZ, TITLESIM, DESCRIPTIONSIM, USER_CLUSTER, TRAINITEMID, TESTITEMID, NON_LINEAR, INIT_PARAM_TITLE, INIT_PARAM_DESCRIPTION, USERCLUSTER_ITEM_RATING_MATRIX, ITEM_SIM_MATRIX))
+os.system('python Step1-Preprocessing/buildtree_preparation.py %s %s %s %s %s %s %s %s %s %s %s'%(TRAINNPZ, TITLESIM, DESCRIPTIONSIM, USER_CLUSTER, TRAINITEMID, TESTITEMID, NON_LINEAR, INIT_PARAM_TITLE, INIT_PARAM_DESCRIPTION, USERCLUSTER_ITEM_RATING_MATRIX, ITEM_SIM_MATRIX))
 print("\n")
 print("##################   build_tree.py   ####################")
 os.system('python Step2-Model/build_tree.py %s %s %s %s %s'%(TRAINNPZ, TESTNPZ, USERCLUSTER_ITEM_RATING_MATRIX, USER_CLUSTER, DEPTH_OF_TREE))
