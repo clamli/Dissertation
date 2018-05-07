@@ -71,6 +71,9 @@
 ### 4. 对比实验
 
 - FDT (Factorized Deicision Tree)
+  - `python factorized_decision_tree.py dataset depth`  (dataset是数据集的名字，depth决定了树的高度)
+  - **输入：** *I\*U* 的矩阵 => *new-user problem*
+  - **输入：** *U\*I* 的矩阵 => *new-item problem*
 - CAL (Content-based Active Learning)
 	- `python content_based_active_learning.py dataset K`  (dataset是数据集的名字，K决定了选择TopK的用户进行query)
 - CBCF (Content-based Collaborative Filtering)
