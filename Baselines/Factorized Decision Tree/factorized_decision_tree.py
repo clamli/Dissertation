@@ -144,7 +144,8 @@ if (__name__ == '__main__'):
 			
 		pred_index = prediction_model[str(final_level)]['ipro'].index(pred_index)
 		P_test[:, itemid] = prediction_model[str(final_level)]['P'][:, pred_index]
-		
+
+	# calculate test RMSE
 	rating_matrix_test_unqueried = csc_matrix(rating_matrix_test_unqueried)
 	P_test = (rating_matrix_test_unqueried!=0).multiply(P_test)
 	nominator = (P_test - rating_matrix_test_unqueried).power(2).sum()
