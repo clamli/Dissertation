@@ -133,7 +133,12 @@ class DecisionTree:
 
 
 
-	def buildPredModel(self):
+	def buildPredModel(self, params=[0.01], rank=10):
+		min_rmse_dict = {}
+		nonzero = self.iu_sparse_matrix_train.getnnz()
+		nonzero_matrix = (self.iu_sparse_matrix_train != 0).toarray()
+		iu_matrix_train = self.iu_sparse_matrix_train.toarray()
+		MF = MatrixFactorization()
 		for test_depth in range(self.depth_threshold):
 			print("level %d"%(test_depth+1))
 			self.pseudo_item[test_depth] = pd.DataFrame(columns=['item_id', 'pseudo_item_profile'])
@@ -151,7 +156,6 @@ class DecisionTree:
 					cur_index = int(cur_index/3)
 					interval = self.node_interval[cur_depth][cur_index]
 				self.pseudo_item[test_depth].loc[index] = [self.tree[interval[0]:interval[1]+1], []]
-
 				sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(self.tree[interval[0]:interval[1]+1])]
 				# calculate average ratings for pseudo item to users
 				avg_rating = np.sum(sub_rating_matrix, axis=0) / (1e-5+sub_rating_matrix.getnnz(axis=0))
@@ -160,27 +164,47 @@ class DecisionTree:
 				for i in range(len(uid)):
 					train_lst.append((uid[i], index, float(rating[i])))
 
-			#################################### Spark ####################################
-			MF = MatrixFactorization()
-			try:
-				user_feature, item_feature = MF.matrix_factorization(train_lst)
-			except:
-				MF.end()
-				MF = MatrixFactorization()
-				user_feature, item_feature = MF.matrix_factorization(train_lst)
+			# test different params for MF
+			min_RMSE = -1
+			for param in params:
+				MF.change_parameter(regParam=param)
+				#################################### Spark ####################################
+				try:
+					user_feature, item_feature = MF.matrix_factorization(train_lst)
+				except:
+					MF.end()
+					MF = MatrixFactorization()
+					MF.change_parameter(regParam=param)
+					user_feature, item_feature = MF.matrix_factorization(train_lst)
+				# calculate RMSE
+				UR = np.zeros((self.user_num, rank))
+				for i, each in zip(range(len(user_feature)), user_feature):
+					UR[i, :] = np.array(each[1])
+				IR = np.zeros((self.item_num, rank))
+				for itemid, itemprof in zip(self.pseudo_item[test_depth]['item_id'], item_feature):
+					IR[itemid, :] = np.array(itemprof[1])
+				RMSE = (np.sum((nonzero_matrix * np.dot(IR, UR.T) - iu_matrix_train)**2) / nonzero)**0.5
+				print("Parameters: %f, RMSE: %f"%(param, RMSE))
+				if min_RMSE == -1 or RMSE < min_RMSE:
+					min_user_feature = user_feature
+					min_item_feature = item_feature
+					min_RMSE = RMSE
+				#################################### Spark ####################################
+
+			# save the best profiles corresponding to the best param
+			print("min RMSE: %f"%min_RMSE)
+			min_rmse_dict[test_depth] = min_RMSE
 			length = len(item_feature)
-			for i, each in zip(range(length), item_feature):
+			for i, each in zip(range(length), min_item_feature):
 				print("item profiles: %d/%d"%(i+1, length), end="\r")
 				self.pseudo_item[test_depth].loc[i][1] = np.array(each[1])
 			print("\n")
 			length = len(user_feature)
-			for i, each in zip(range(length), user_feature):
+			for i, each in zip(range(length), min_user_feature):
 				print("user profiles: %d/%d"%(i+1, length), end="\r")
 				self.user_profile[test_depth].loc[i] = [each[1].tolist()]
 			print("\n")
-			MF.end()
-			#################################### Spark ####################################
-
+		MF.end()
 
 	def predict(self):
 		iuclst_rating_matrix_test = self.iuclst_rating_matrix[self.item_num:, :]

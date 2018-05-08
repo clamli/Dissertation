@@ -19,8 +19,9 @@ class MatrixFactorization:
         self.spark = SparkContext(conf=conf)
         print("New SparkSession started...")
 
-    def change_parameter(self, regParam):
+    def change_parameter(self, regParam=0.01, rank=10):
         self.regParam = regParam
+        self.rank = rank
 
     def matrix_factorization(self, train_lst):
         ratings = self.spark.parallelize(train_lst)
