@@ -21,7 +21,8 @@ INIT_PARAM_DESCRIPTION = 1.0
 DEPTH_OF_TREE = 5
 NON_LINEAR = "D:/GitCode/Dissertation/Data/%s/nonlinreg.mat"%(dataset)
 USER_CLUSTER = "Data/%s/user_cluster_set"%(dataset)
-USERCLUSTER_ITEM_RATING_MATRIX = "Data/%s/iuclst_rating_matrix"%(dataset)
+USERCLUSTER_ITEM_RATING_MATRIX_TRAIN = "Data/%s/iuclst_rating_matrix_train"%(dataset)
+USERCLUSTER_ITEM_RATING_MATRIX_TEST = "Data/%s/iuclst_rating_matrix_test"%(dataset)
 ITEM_SIM_MATRIX = "Data/%s/item_sim_matrix"%(dataset)
 
 
@@ -44,8 +45,8 @@ print("##################   user_clustering.py   ####################")
 os.system('python Step1-Preprocessing/user_clustering.py %s %s %s'%(USERSIM, CLUSTER_NUM, USER_CLUSTER))
 print("\n")
 print("##################   buildtree_preparation.py   ####################")
-os.system('python Step1-Preprocessing/buildtree_preparation.py %s %s %s %s %s %s %s %s %s %s %s'%(TRAINNPZ, TITLESIM, DESCRIPTIONSIM, USER_CLUSTER, TRAINITEMID, TESTITEMID, NON_LINEAR, INIT_PARAM_TITLE, INIT_PARAM_DESCRIPTION, USERCLUSTER_ITEM_RATING_MATRIX, ITEM_SIM_MATRIX))
+os.system('python Step1-Preprocessing/buildtree_preparation.py %s %s %s %s %s %s %s %s %s %s %s'%(TRAINNPZ, TESTNPZ, TITLESIM, DESCRIPTIONSIM, USER_CLUSTER, TRAINITEMID, TESTITEMID, NON_LINEAR, INIT_PARAM_TITLE, INIT_PARAM_DESCRIPTION, USERCLUSTER_ITEM_RATING_MATRIX, USERCLUSTER_ITEM_RATING_MATRIX_TEST, ITEM_SIM_MATRIX))
 print("\n")
 print("##################   build_tree.py   ####################")
-os.system('python Step2-Model/build_tree.py %s %s %s %s %s'%(TRAINNPZ, TESTNPZ, USERCLUSTER_ITEM_RATING_MATRIX, USER_CLUSTER, DEPTH_OF_TREE))
+os.system('python Step2-Model/build_tree.py %s %s %s %s %s'%(TRAINNPZ, TESTNPZ, USERCLUSTER_ITEM_RATING_MATRIX_TRAIN, USERCLUSTER_ITEM_RATING_MATRIX_TEST, USER_CLUSTER, DEPTH_OF_TREE))
 print("\n")
