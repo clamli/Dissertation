@@ -61,12 +61,12 @@
 - 预测评分：
   - 对每一个test商品，从树的根节点开始向下走，利用目标叶子节点的latent vector作为它的特征向量
   - 利用特征向量和所有物品的特征向量的点积预测评分，计算RMSE（对每一层都计算）
-- 命令：`python build_tree.py [input_file1, ..., input_file4] desired_depth`
+- 命令：`python build_tree.py [input_file1, ..., input_file5] desired_depth`
 
 ### 3. 运行
 
 - 利用*Python*脚本运行上述所有步骤：`python script.py`
-- 代码开头数据集名称（*dataset*）请相应更改
+- 代码开头数据集名称（*dataset*）需相应更改
 
 ### 4. 对比实验
 
@@ -84,3 +84,4 @@
   - 数据集过于稀疏（0.02%），导致每一用户基本只有一个评分，第一层作为伪物品作矩阵分解时评分满，效果好，越往下效果越差。
   - 点的划分过于不均匀，使得伪物品选择不优秀，可试平均划分。
 - 物品个数超过30万的Automotive集合上计算*item similarity*时出现*Memory Error*
+  - 已解决，选择评分个数大于5个的物品和用户
