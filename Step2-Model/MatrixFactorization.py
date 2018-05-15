@@ -14,8 +14,8 @@ class MatrixFactorization:
         self.rank = rank
         conf = SparkConf().setAppName("appName").setMaster("local[*]")
         # self.spark = SparkSession.builder.master("local[*]").appName("Example").getOrCreate()
-        conf.set("spark.driver.memory","8g")
-        conf.set("spark.executor.memory","8g")
+        conf.set("spark.driver.memory","16g")
+        conf.set("spark.executor.memory","16g")
         self.spark = SparkContext(conf=conf)
         print("New SparkSession started...")
 
@@ -31,7 +31,10 @@ class MatrixFactorization:
         print("MF DONE")
         userFeatures = sorted(model.userFeatures().collect(), key=lambda d: d[0], reverse=False)
         productFeatures = sorted(model.productFeatures().collect(), key=lambda d: d[0], reverse=False)
-        return userFeatures, productFeatures
+        userProfile = {each[0]: each[1].tolist() for each in userFeatures}
+        itemProfile = {each[0]: each[1].tolist() for each in productFeatures}
+             
+        return userProfile, itemProfile
 
     def end(self):
         self.spark.stop()
