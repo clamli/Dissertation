@@ -1,13 +1,15 @@
 import numpy as np
 import pandas as pd
+from scipy.sparse import *
 from MatrixFactorization import MatrixFactorization
 
 class DecisionTree:
 
-	def __init__(self, iu_sparse_matrix_train, iu_sparse_matrix_test, iuclst_rating_matrix, user_cluster_set, depth):
+	def __init__(self, iu_sparse_matrix_train, iu_sparse_matrix_test, iuclst_rating_matrix_train, iuclst_rating_matrix_test, user_cluster_set, depth):
 		self.iu_sparse_matrix_train = iu_sparse_matrix_train
 		self.iu_sparse_matrix_test = iu_sparse_matrix_test
-		self.iuclst_rating_matrix = iuclst_rating_matrix
+		self.iuclst_rating_matrix_train = iuclst_rating_matrix_train
+		self.iuclst_rating_matrix_test = iuclst_rating_matrix_test
 		self.user_cluster_set = user_cluster_set
 		self.user_cluster_id_set = list(range(0, len(user_cluster_set)))
 		self.item_num = iu_sparse_matrix_train.shape[0]
@@ -28,6 +30,9 @@ class DecisionTree:
 		self.pseudo_item = {}
 		self.user_profile = {}
 
+		# prediction model
+		self.prediction_model = {}
+
 	def errorCalculation(self, item_in_node):
 		sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(item_in_node)]
 		sum_node = np.sum(sub_rating_matrix, axis=0)
@@ -43,7 +48,7 @@ class DecisionTree:
 		opt_item_in_middle_child = []
 		opt_item_in_right_child = []
 		item_in_node = self.tree[self.node_interval[cur_depth][cur_index][0]:self.node_interval[cur_depth][cur_index][1]+1]
-		ratings = self.iuclst_rating_matrix[np.ix_(item_in_node)]
+		ratings = self.iuclst_rating_matrix_train[np.ix_(item_in_node)]
 
 		if len(item_in_node) == 0:
 			return [[], [], []], -1, -1, -1
@@ -52,17 +57,18 @@ class DecisionTree:
 			# print(user_cluster_id)
 			ratings_for_cluster = ratings[:, user_cluster_id]
 			sorted_array = np.sort(ratings_for_cluster)
-			itve1 = sorted_array[int(len(sorted_array)/3)]
-			itve2 = sorted_array[int((2*len(sorted_array))/3)]
+			node_size = len(sorted_array)
+			itve1 = sorted_array[round(node_size/3)]
+			itve2 = sorted_array[round((2*node_size)/3)]
 			item_in_left_child = []
 			item_in_middle_child = []
 			item_in_right_child = []
 			for i in range(ratings_for_cluster.shape[0]):
-				# if ratings_for_cluster[i] >= itve2:
-				if ratings_for_cluster[i] >= 4:
+				if ratings_for_cluster[i] > itve2:
+				# if ratings_for_cluster[i] >= 4:
 					item_in_right_child.append(item_in_node[i])
-				# elif ratings_for_cluster[i] <= itve1:
-				elif ratings_for_cluster[i] <= 2.5:
+				elif ratings_for_cluster[i] <= itve1:
+				# elif ratings_for_cluster[i] <= 2.5:
 					item_in_left_child.append(item_in_node[i])
 				else:
 					item_in_middle_child.append(item_in_node[i])
@@ -70,6 +76,16 @@ class DecisionTree:
 			error_dislike = self.errorCalculation(item_in_left_child)
 			error_mediocre = self.errorCalculation(item_in_middle_child)
 			error_like = self.errorCalculation(item_in_right_child)
+
+			# if cur_depth == 0:
+			# 	print("user_cluster_id:%d"%user_cluster_id)
+			# 	print("error:%f"%(error_dislike+error_mediocre+error_like))
+			# 	# print("error_dislike:%f"%error_dislike)
+			# 	# print("error_like:%f"%error_like)
+			# 	# print("error_mediocre:%f"%error_mediocre)
+			# 	# print(list(ratings_for_cluster))
+			# 	# print(ratings_for_cluster.shape[0])
+			# 	print("\n")
 
 			error = error_dislike + error_mediocre + error_like
 			if min_error == -1 or error < min_error:
@@ -80,7 +96,7 @@ class DecisionTree:
 				opt_item_in_left_child = item_in_left_child[:]
 				opt_item_in_middle_child = item_in_middle_child[:]
 				opt_item_in_right_child = item_in_right_child[:]
-
+		# print("opt_user_cluster_id:%d"%(opt_user_cluster_id))
 		return [opt_item_in_left_child, opt_item_in_middle_child, opt_item_in_right_child], opt_user_cluster_id, opt_itve1, opt_itve2
 
 
@@ -135,105 +151,114 @@ class DecisionTree:
 
 	def buildPredModel(self, params=[0.01], rank=10):
 		min_rmse_dict = {}
-		nonzero = self.iu_sparse_matrix_train.getnnz()
-		nonzero_matrix = (self.iu_sparse_matrix_train != 0).toarray()
-		iu_matrix_train = self.iu_sparse_matrix_train.toarray()
+		nonzero = self.iu_sparse_matrix_test.getnnz()
+		nonzero_matrix = (self.iu_sparse_matrix_test != 0)
 		MF = MatrixFactorization()
 		for test_depth in range(self.depth_threshold):
-			print("level %d"%(test_depth+1))
-			self.pseudo_item[test_depth] = pd.DataFrame(columns=['item_id', 'pseudo_item_profile'])
-			self.user_profile[test_depth] = pd.DataFrame(columns=['user_profile'])
+			# if test_depth < 1:
+			# 	continue
+			print("level %d"%(test_depth))
 			train_lst = []
 			length = len(self.node_interval[test_depth])
-
 			# generate input for spark ALS train
 			for index, interval in zip(range(length), self.node_interval[test_depth]):
 				print("%d/%d"%(index+1, length), end="\r")
-				cur_depth = test_depth
-				cur_index = index
-				while interval[1] - interval[0] == -1:
-					cur_depth -= 1
-					cur_index = int(cur_index/3)
-					interval = self.node_interval[cur_depth][cur_index]
-				self.pseudo_item[test_depth].loc[index] = [self.tree[interval[0]:interval[1]+1], []]
+				if interval[1] - interval[0] == -1:
+					continue
 				sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(self.tree[interval[0]:interval[1]+1])]
 				# calculate average ratings for pseudo item to users
-				avg_rating = np.sum(sub_rating_matrix, axis=0) / (1e-5+sub_rating_matrix.getnnz(axis=0))
+				avg_rating = np.sum(sub_rating_matrix, axis=0) / (1e-9+sub_rating_matrix.getnnz(axis=0))
 				uid = avg_rating.nonzero()[1]
 				rating = np.array(avg_rating[np.ix_([0], uid)])[0]
 				for i in range(len(uid)):
 					train_lst.append((uid[i], index, float(rating[i])))
+			print("Rating Number of level " + str(test_depth) + ": " + str(len(train_lst)))
+			# print(train_lst)
 
 			# test different params for MF
 			min_RMSE = -1
+			self.prediction_model.setdefault(test_depth, {})
 			for param in params:
 				MF.change_parameter(regParam=param)
 				#################################### Spark ####################################
 				try:
-					user_feature, item_feature = MF.matrix_factorization(train_lst)
+					user_profile, item_profile = MF.matrix_factorization(train_lst)
 				except:
 					MF.end()
 					MF = MatrixFactorization()
 					MF.change_parameter(regParam=param)
-					user_feature, item_feature = MF.matrix_factorization(train_lst)
-				# calculate RMSE
-				UR = np.zeros((self.user_num, rank))
-				for i, each in zip(range(len(user_feature)), user_feature):
-					UR[i, :] = np.array(each[1])
-				IR = np.zeros((self.item_num, rank))
-				for itemid, itemprof in zip(self.pseudo_item[test_depth]['item_id'], item_feature):
-					IR[itemid, :] = np.array(itemprof[1])
-				RMSE = (np.sum((nonzero_matrix * np.dot(IR, UR.T) - iu_matrix_train)**2) / nonzero)**0.5
-				print("Parameters: %f, RMSE: %f"%(param, RMSE))
-				if min_RMSE == -1 or RMSE < min_RMSE:
-					min_user_feature = user_feature
-					min_item_feature = item_feature
-					min_RMSE = RMSE
+					user_profile, item_profile = MF.matrix_factorization(train_lst)
 				#################################### Spark ####################################
 
-			# save the best profiles corresponding to the best param
+				################################ Calculate RMSE ##############################
+				RMSE = self.predict(test_depth, item_profile, user_profile)
+				print("Parameters: %f, RMSE: %f"%(param, RMSE))
+				if min_RMSE == -1 or RMSE < min_RMSE:
+					min_user_profile = user_profile
+					min_item_profile = item_profile
+					min_plambda = param
+					min_RMSE = RMSE
+				if RMSE > min_RMSE:
+					break
+				################################ Calculate RMSE ##############################
+
+			# save the best profiles and param corresponding to each level
 			print("min RMSE: %f"%min_RMSE)
 			min_rmse_dict[test_depth] = min_RMSE
-			length = len(item_feature)
-			for i, each in zip(range(length), min_item_feature):
-				print("item profiles: %d/%d"%(i+1, length), end="\r")
-				self.pseudo_item[test_depth].loc[i][1] = np.array(each[1])
-			print("\n")
-			length = len(user_feature)
-			for i, each in zip(range(length), min_user_feature):
-				print("user profiles: %d/%d"%(i+1, length), end="\r")
-				self.user_profile[test_depth].loc[i] = [each[1].tolist()]
-			print("\n")
+			self.prediction_model[test_depth]['upro'] = min_user_profile
+			self.prediction_model[test_depth]['ipro'] = min_item_profile
+			self.prediction_model[test_depth]['plambda'] = min_plambda
 		MF.end()
 
-	def predict(self):
-		iuclst_rating_matrix_test = self.iuclst_rating_matrix[self.item_num:, :]
-		iu_pred_ratings_test = np.zeros(self.iu_sparse_matrix_test.shape)
-		iu_true_ratings_test = self.iu_sparse_matrix_test.toarray()
-		length = iuclst_rating_matrix_test.shape[0]
-		for test_depth in range(self.depth_threshold):
-			for i in range(iuclst_rating_matrix_test.shape[0]):
-				print("prediction: %d/%d"%(i+1, length), end="\r")
-				cur_depth = 0
-				cur_index = 0
-				# print(self.node_interval)
-				while self.node_interval[cur_depth][cur_index][1] - self.node_interval[cur_depth][cur_index][1] != -1:
-					pre_depth = cur_depth
-					pre_index = cur_index
-					if cur_depth == test_depth:
+
+	def predict(self, test_depth, item_profile, user_profile):
+		self.prediction_model[test_depth]['ipro'] = item_profile
+		P = np.dot(np.array(list(item_profile.values())), np.array(list(user_profile.values())).T)  
+		# print(user_profile)
+		P_test = np.zeros(self.iu_sparse_matrix_test.shape)
+		rating_matrix_test_unqueried = self.iu_sparse_matrix_test.toarray()
+		for itemid in range(self.iu_sparse_matrix_test.shape[0]):
+			pred_index = 0
+			final_level = 0
+			rated_user = []
+			user_all_ratings = self.iu_sparse_matrix_test[itemid, :].nonzero()[0]
+			for depth in range(test_depth):
+				rating = self.iuclst_rating_matrix_test[itemid][self.user_set_id[final_level][pred_index]]
+				if rating > self.node_assc_rating[final_level][pred_index][1]:
+					tmp_pred_index = 3*pred_index + 2
+					if tmp_pred_index in self.prediction_model[depth+1]['ipro']:
+						final_level += 1
+						pred_index = tmp_pred_index
+					else:
 						break
-					rating = iuclst_rating_matrix_test[i][self.user_set_id[cur_depth][cur_index]]
-					# if rating >= self.node_assc_rating[cur_depth][cur_index][1]:   # right
-					if rating >= 4:
-						cur_index = cur_index*3 + 2
-					# elif rating <= self.node_assc_rating[cur_depth][cur_index][0]:   # left
-					elif rating <= 2.5:
-						cur_index = cur_index*3
-					else:     					# middle
-						cur_index = cur_index*3 + 1
-					cur_depth += 1
-				iu_pred_ratings_test[i, :] = np.dot(np.array(list(self.user_profile[test_depth]['user_profile'])), self.pseudo_item[test_depth].iloc[pre_index]['pseudo_item_profile'])
-			
-			# calculate RMSE
-			RMSE = (np.sum(((iu_true_ratings_test != 0) * iu_pred_ratings_test - iu_true_ratings_test)**2) / np.sum(iu_true_ratings_test != 0))**0.5
-			print("level %d: %f"%(test_depth+1, RMSE))
+				elif rating <= self.node_assc_rating[final_level][pred_index][0]:
+					tmp_pred_index = 3*pred_index
+					if tmp_pred_index in self.prediction_model[depth+1]['ipro']:
+						rated_user.append(self.user_set_id[depth][pred_index])
+						final_level += 1
+						pred_index = tmp_pred_index
+					else:
+						break
+				else:
+					tmp_pred_index = 3*pred_index + 1
+					if tmp_pred_index in self.prediction_model[depth+1]['ipro']:
+						rated_user.append(self.user_set_id[depth][pred_index])
+						final_level += 1
+						pred_index = tmp_pred_index
+					else:
+						break      
+			# print("pred_index before", pred_index)       
+			pred_index = list(self.prediction_model[final_level]['ipro'].keys()).index(pred_index)
+			# print("pred_index after", pred_index) 
+			# print(P.shape)  
+			# print("itemid:"+str(itemid)+" final_level:"+str(final_level)+" pred_index:"+str(pred_index))
+			P_test[itemid, :] = P[pred_index, :]
+			rating_matrix_test_unqueried[itemid, rated_user] = 0
+
+		rating_matrix_test_unqueried = csc_matrix(rating_matrix_test_unqueried)
+		P_test = (rating_matrix_test_unqueried!=0).multiply(P_test)
+		P_test = P_test.tolil()
+		P_test[P_test>5] = 5
+		P_test[P_test<0] = 0
+		diff = P_test - rating_matrix_test_unqueried
+		return ( diff.multiply(diff).sum() / (rating_matrix_test_unqueried!=0).sum() )**0.5
