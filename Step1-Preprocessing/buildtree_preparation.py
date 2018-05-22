@@ -51,11 +51,14 @@ if (__name__ == '__main__'):
 	os.chdir("D:\GitCode\Dissertation\Step1-Preprocessing")
 	eng = matlab.engine.start_matlab()
 	x = eng.my_fitnlm(finput_nonlinreg, finput_init_tp, finput_init_dp, nargout=3)
-	theta1, theta2 = x[0], x[1]
+	theta1, theta2, RMSE = x[0], x[1], x[2]
 	eng.quit()
 	sim_matrix = theta1*title_sim_matrix + theta2*description_sim_matrix
 	os.chdir(cur_path)
 	rw.write2file(sim_matrix, foutput_item_sim_matrix)
+	print("theta1 = ", theta1)
+	print("theta2 = ", theta2)
+	print("RMSE = ", RMSE)
 	print("matlab finished")
 
 	# extract similarity matrix for training and test item
@@ -72,10 +75,10 @@ if (__name__ == '__main__'):
 		print("user cluster: %d / %d"%(ind+1, len(user_cluster_set)), end="\r")
 		user_cluster_size = len(user_cluster)
 		sub_rating_matrix = iu_rating_matrix_train[np.ix_(item_in_node_train, user_cluster)].T.toarray()     # user number * training item number
-		sub_rating_matrix_pred = (np.dot(sub_rating_matrix, sim_matrix_train) / np.dot(sub_rating_matrix != 0, sim_matrix_train)) 	
+		sub_rating_matrix_pred = (np.dot(sub_rating_matrix, sim_matrix_train) / (1e-9+np.dot(sub_rating_matrix != 0, sim_matrix_train))) 	
 		iuclst_rating_matrix_train[:, ind] = np.sum(sub_rating_matrix + 0.01*(sub_rating_matrix == 0) * sub_rating_matrix_pred, axis=0) / np.sum((sub_rating_matrix == 0)*0.01 + (sub_rating_matrix != 0)*1, axis=0)
 		sub_rating_matrix = iu_rating_matrix_test[np.ix_(item_in_node_test, user_cluster)].T.toarray()     # user number * test item number
-		sub_rating_matrix_pred = (np.dot(sub_rating_matrix, sim_matrix_test) / np.dot(sub_rating_matrix != 0, sim_matrix_test)) 	
+		sub_rating_matrix_pred = (np.dot(sub_rating_matrix, sim_matrix_test) / (1e-9+np.dot(sub_rating_matrix != 0, sim_matrix_test))) 	
 		iuclst_rating_matrix_test[:, ind] = np.sum(sub_rating_matrix + 0.01*(sub_rating_matrix == 0) * sub_rating_matrix_pred, axis=0) / np.sum((sub_rating_matrix == 0)*0.01 + (sub_rating_matrix != 0)*1, axis=0)
 	print("\nuser cluster/item rating matrix generated done!")
 

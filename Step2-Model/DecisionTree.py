@@ -7,6 +7,13 @@ class DecisionTree:
 
 	def __init__(self, iu_sparse_matrix_train, iu_sparse_matrix_test, iuclst_rating_matrix_train, iuclst_rating_matrix_test, user_cluster_set, depth):
 		self.iu_sparse_matrix_train = iu_sparse_matrix_train
+		# consider user biases
+		plambda = 7
+		golbal_mean = np.sum(self.iu_sparse_matrix_train) / np.sum(self.iu_sparse_matrix_train!=0)
+		user_bias = (np.sum(self.iu_sparse_matrix_train, 0) + plambda*golbal_mean) / (np.sum(self.iu_sparse_matrix_train!=0, 0) + plambda)
+		self.iu_rating_matrix_bias = np.array(iu_sparse_matrix_train-user_bias)
+		self.iu_rating_matrix_bias = csr_matrix((iu_sparse_matrix_train!=0).toarray() * self.iu_rating_matrix_bias)
+
 		self.iu_sparse_matrix_test = iu_sparse_matrix_test
 		self.iuclst_rating_matrix_train = iuclst_rating_matrix_train
 		self.iuclst_rating_matrix_test = iuclst_rating_matrix_test
@@ -34,7 +41,7 @@ class DecisionTree:
 		self.prediction_model = {}
 
 	def errorCalculation(self, item_in_node):
-		sub_rating_matrix = self.iu_sparse_matrix_train[np.ix_(item_in_node)]
+		sub_rating_matrix = self.iu_rating_matrix_bias[np.ix_(item_in_node)]      # user rating matrix with bias
 		sum_node = np.sum(sub_rating_matrix, axis=0)
 		sum_node_2 = np.sum(sub_rating_matrix.power(2), axis=0)
 		num_node = np.sum(sub_rating_matrix != 0, axis=0)
@@ -60,6 +67,8 @@ class DecisionTree:
 			node_size = len(sorted_array)
 			itve1 = sorted_array[round(node_size/3)]
 			itve2 = sorted_array[round((2*node_size)/3)]
+			# itve1 = []
+			# itve2 = []
 			item_in_left_child = []
 			item_in_middle_child = []
 			item_in_right_child = []
@@ -155,7 +164,7 @@ class DecisionTree:
 		nonzero_matrix = (self.iu_sparse_matrix_test != 0)
 		MF = MatrixFactorization()
 		for test_depth in range(self.depth_threshold):
-			# if test_depth < 1:
+			# if test_depth < 2:
 			# 	continue
 			print("level %d"%(test_depth))
 			train_lst = []
@@ -191,13 +200,14 @@ class DecisionTree:
 				#################################### Spark ####################################
 
 				################################ Calculate RMSE ##############################
-				RMSE = self.predict(test_depth, item_profile, user_profile)
+				RMSE, P_test = self.predict(test_depth, item_profile, user_profile)
 				print("Parameters: %f, RMSE: %f"%(param, RMSE))
 				if min_RMSE == -1 or RMSE < min_RMSE:
 					min_user_profile = user_profile
 					min_item_profile = item_profile
 					min_plambda = param
 					min_RMSE = RMSE
+					min_Ptest = P_test
 				if RMSE > min_RMSE:
 					break
 				################################ Calculate RMSE ##############################
@@ -208,12 +218,14 @@ class DecisionTree:
 			self.prediction_model[test_depth]['upro'] = min_user_profile
 			self.prediction_model[test_depth]['ipro'] = min_item_profile
 			self.prediction_model[test_depth]['plambda'] = min_plambda
+			self.prediction_model[test_depth]['P_test'] = min_Ptest
 		MF.end()
 
 
 	def predict(self, test_depth, item_profile, user_profile):
 		self.prediction_model[test_depth]['ipro'] = item_profile
-		P = np.dot(np.array(list(item_profile.values())), np.array(list(user_profile.values())).T)  
+		P = np.zeros((pow(3, test_depth), self.user_num))
+		P[np.ix_(list(item_profile.keys()), list(user_profile.keys()))] = np.dot(np.array(list(item_profile.values())), np.array(list(user_profile.values())).T)
 		# print(user_profile)
 		P_test = np.zeros(self.iu_sparse_matrix_test.shape)
 		rating_matrix_test_unqueried = self.iu_sparse_matrix_test.toarray()
@@ -224,6 +236,7 @@ class DecisionTree:
 			user_all_ratings = self.iu_sparse_matrix_test[itemid, :].nonzero()[0]
 			for depth in range(test_depth):
 				rating = self.iuclst_rating_matrix_test[itemid][self.user_set_id[final_level][pred_index]]
+				# if rating >= 4:
 				if rating > self.node_assc_rating[final_level][pred_index][1]:
 					tmp_pred_index = 3*pred_index + 2
 					if tmp_pred_index in self.prediction_model[depth+1]['ipro']:
@@ -231,6 +244,7 @@ class DecisionTree:
 						pred_index = tmp_pred_index
 					else:
 						break
+				# elif rating <= 2.5:
 				elif rating <= self.node_assc_rating[final_level][pred_index][0]:
 					tmp_pred_index = 3*pred_index
 					if tmp_pred_index in self.prediction_model[depth+1]['ipro']:
@@ -247,6 +261,8 @@ class DecisionTree:
 						pred_index = tmp_pred_index
 					else:
 						break      
+			# final_level = test_depth
+			# pred_index = 0
 			# print("pred_index before", pred_index)       
 			pred_index = list(self.prediction_model[final_level]['ipro'].keys()).index(pred_index)
 			# print("pred_index after", pred_index) 
@@ -261,4 +277,4 @@ class DecisionTree:
 		P_test[P_test>5] = 5
 		P_test[P_test<0] = 0
 		diff = P_test - rating_matrix_test_unqueried
-		return ( diff.multiply(diff).sum() / (rating_matrix_test_unqueried!=0).sum() )**0.5
+		return ( diff.multiply(diff).sum() / (rating_matrix_test_unqueried!=0).sum() )**0.5, P_test

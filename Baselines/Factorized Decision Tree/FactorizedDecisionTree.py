@@ -2,7 +2,7 @@ from scipy.sparse import *
 import numpy as np
 
 class DecisionTreeModel:
-    def __init__(self, source, depth_threshold=10, plambda=7, MSP_item=200):
+    def __init__(self, source, depth_threshold=10, plambda=7, MSP_item=200, flag=False, rU = None, biasU=None, sum_cur_t=None, sum_2_cur_t=None, sum_cntt=None):
         
         self.sMatrix = source
         self.depth_threshold = depth_threshold
@@ -26,38 +26,45 @@ class DecisionTreeModel:
         self.split_item = []
         self.lr_bound = {'0': [[0, len(self.tree) - 1]]}
 
-        #### Generate rU ####        
-        self.rU = {}        
-        num_ratings = len(userset)
-        i = 0
-        for itemid, userid in zip(itemset, userset):
-            # put approximate 5000 user in each file. Divide user num with 5000.
-            if i%100000 == 0:
-                print("%.2f%%" %(100 * i/num_ratings))
-            i += 1
-            self.rU.setdefault(userid, {})[itemid] = int(source[itemid, userid])        
-        print("rU Generation DONE")
-         
-        #### Generate bias, sum_cur_t, sum_2_cur_t, sum_cntt ####
-        self.biasU = np.zeros(self.sMatrix.shape[1])
-        self.sum_cur_t = np.zeros(self.real_item_num)
-        self.sum_2_cur_t = np.zeros(self.real_item_num)
-        self.sum_cntt = np.zeros(self.real_item_num)
-        i = 0
-        for userid in self.tree:
-            if i % 50000 == 0:
-                print("%.2f%%" % (100 * i / (0.75 * 480189)))
-            i += 1
+        #### Generate rU ####     
+        if flag == False:   
+            self.rU = {}        
+            num_ratings = len(userset)
+            i = 0
+            for itemid, userid in zip(itemset, userset):
+                # put approximate 5000 user in each file. Divide user num with 5000.
+                if i%100000 == 0:
+                    print("%.2f%%" %(100 * i/num_ratings))
+                i += 1
+                self.rU.setdefault(userid, {})[itemid] = int(source[itemid, userid])        
+            print("rU Generation DONE")
+             
+            #### Generate bias, sum_cur_t, sum_2_cur_t, sum_cntt ####
+            self.biasU = np.zeros(self.sMatrix.shape[1])
+            self.sum_cur_t = np.zeros(self.real_item_num)
+            self.sum_2_cur_t = np.zeros(self.real_item_num)
+            self.sum_cntt = np.zeros(self.real_item_num)
+            i = 0
+            for userid in self.tree:
+                if i % 50000 == 0:
+                    print("%.2f%%" % (100 * i / (0.75 * 480189)))
+                i += 1
 
-            self.biasU[userid] = (self.sMatrix.getcol(userid).sum() \
-                                     + self.plambda * self.global_mean) /   \
-                                 (self.plambda + self.sMatrix.getcol(userid).getnnz())
-            user_all_rating_id = self.sMatrix.getcol(userid).nonzero()[0]
-            user_all_rating = find(self.sMatrix.getcol(userid))[2]
-            self.sum_cur_t[user_all_rating_id[:]] += user_all_rating[:] - self.biasU[userid]
-            self.sum_2_cur_t[user_all_rating_id[:]] += (user_all_rating[:] - self.biasU[userid]) ** 2
-            self.sum_cntt[user_all_rating_id[:]] += 1  
-        print("bias, sum_cur_t, sum_2_cur_t Generation DONE")
+                self.biasU[userid] = (self.sMatrix.getcol(userid).sum() \
+                                         + self.plambda * self.global_mean) /   \
+                                     (self.plambda + self.sMatrix.getcol(userid).getnnz())
+                user_all_rating_id = self.sMatrix.getcol(userid).nonzero()[0]
+                user_all_rating = find(self.sMatrix.getcol(userid))[2]
+                self.sum_cur_t[user_all_rating_id[:]] += user_all_rating[:] - self.biasU[userid]
+                self.sum_2_cur_t[user_all_rating_id[:]] += (user_all_rating[:] - self.biasU[userid]) ** 2
+                self.sum_cntt[user_all_rating_id[:]] += 1  
+            print("bias, sum_cur_t, sum_2_cur_t Generation DONE")
+        else:
+            self.rU = rU
+            self.biasU = biasU
+            self.sum_cur_t = sum_cur_t
+            self.sum_2_cur_t = sum_2_cur_t
+            self.sum_cntt = sum_cntt
         
         # initialize
         self.item_size = self.sMatrix.shape[0]

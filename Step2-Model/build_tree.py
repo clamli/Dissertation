@@ -23,11 +23,12 @@ if (__name__ == '__main__'):
 	# read into data for tree construction
 	iu_sparse_matrix_train = scipy.sparse.load_npz(finput_iu_sparse_matrix_train)
 	iu_sparse_matrix_test = scipy.sparse.load_npz(finput_iu_sparse_matrix_test)
-	iuclst_rating_matrix = rw.readffile(finput_iuclst_rating_matrix)
+	iuclst_rating_matrix_train = rw.readffile(finput_iuclst_rating_matrix_train)
+	iuclst_rating_matrix_test = rw.readffile(finput_iuclst_rating_matrix_test)
 	user_cluster_set = rw.readffile(finput_user_cluster_set)
 
 	# build tree
-	dt_model = DecisionTree(iu_sparse_matrix_train, iu_sparse_matrix_test, finput_iuclst_rating_matrix_train, finput_iuclst_rating_matrix_test, user_cluster_set, finput_desired_depth)
+	dt_model = DecisionTree(iu_sparse_matrix_train, iu_sparse_matrix_test, iuclst_rating_matrix_train, iuclst_rating_matrix_test, user_cluster_set, finput_desired_depth)
 	dt_model.buildTreeModel()
 	print("\ntree construction finished")
 	# build prediction model
