@@ -46,6 +46,7 @@ if (__name__ == '__main__'):
 	df_test = df.loc[df['asin'].isin(test_item_id)]
 	# set user set as those who rate at least one item in the training set
 	userid = list(set(list(df_train['reviewerID'])))
+	print("user number: ", len(userid))
 
 	# map user/item to id
 	user_id_dict = {}
