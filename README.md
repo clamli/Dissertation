@@ -78,7 +78,7 @@
 	- `python content_based_active_learning.py dataset K`  (dataset是数据集的名字，K决定了选择TopK的用户进行query)
 - CBCF (Content-based Collaborative Filtering)
 
-### 4. 当前问题
+### 5. 当前问题
 
 1. 对Amazon数据集来说树的第一层预测效果最好，分析原因可能如下：
 
